@@ -1,5 +1,6 @@
 use std::ffi::c_void;
 
+#[cfg(feature = "submit_d3d11")]
 use windows::Win32::Graphics::Direct3D11::ID3D11Texture2D;
 
 use super::{sys, VkDevice_T, VkInstance_T, VkPhysicalDevice_T, VkQueue_T};
@@ -32,8 +33,8 @@ pub mod vulkan {
         pub format: u32,
         pub sample_count: u32,
     }
-    unsafe impl Send for Texture{}
-    unsafe impl Sync for Texture{}
+    unsafe impl Send for Texture {}
+    unsafe impl Sync for Texture {}
 }
 
 #[derive(Debug, Copy, Clone)]
