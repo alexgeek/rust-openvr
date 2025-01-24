@@ -208,14 +208,6 @@ pub enum Event {
     ButtonUnpress(Controller),
     ButtonTouch(Controller),
     ButtonUntouch(Controller),
-    DualAnalog_Press,
-    DualAnalog_Unpress,
-    DualAnalog_Touch,
-    DualAnalog_Untouch,
-    DualAnalog_Move,
-    DualAnalog_ModeSwitch1,
-    DualAnalog_ModeSwitch2,
-    DualAnalog_Cancel,
     MouseMove(Mouse),
     MouseButtonDown(Mouse),
     MouseButtonUp(Mouse),
@@ -231,8 +223,6 @@ pub enum Event {
     InputFocusCaptured(Process),
     #[deprecated]
     InputFocusReleased(Process),
-    SceneFocusLost(Process),
-    SceneFocusGained(Process),
     /// The app actually drawing the scene changed (usually to or from the compositor)
     SceneApplicationChanged(Process),
     /// New app got access to draw the scene
@@ -255,8 +245,6 @@ pub enum Event {
     DashboardRequested,
     /// Send to the overlay manager
     ResetDashboard,
-    /// Send to the dashboard to render a toast - data is the notification ID
-    RenderToast,
     /// Sent to overlays when a SetOverlayRaw or SetOverlayFromFile call finishes loading
     ImageLoaded,
     /// Sent to keyboard renderer in the dashboard to invoke it
@@ -296,7 +284,6 @@ pub enum Event {
     /// The application has been asked to quit
     Quit(Process),
     ProcessQuit(Process),
-    QuitAborted_UserPrompt(Process),
     QuitAcknowledged(Process),
     /// The driver has requested that SteamVR shut down
     DriverRequestedQuit,
@@ -338,16 +325,10 @@ pub enum Event {
     KeyboardCharInput(Keyboard),
     /// Sent when DONE button clicked on keyboard
     KeyboardDone,
-    ApplicationTransitionStarted,
-    ApplicationTransitionAborted,
-    ApplicationTransitionNewAppStarted,
     ApplicationListUpdated,
     ApplicationMimeTypeLoad,
-    ApplicationTransitionNewAppLaunchComplete,
     ProcessConnected,
     ProcessDisconnected,
-    Compositor_MirrorWindowShown,
-    Compositor_MirrorWindowHidden,
     Compositor_ChaperoneBoundsShown,
     Compositor_ChaperoneBoundsHidden,
     Compositor_DisplayDisconnected,
