@@ -1,4 +1,3 @@
-use std::ffi::c_void;
 
 #[cfg(feature = "submit_d3d11")]
 use windows::Win32::Graphics::Direct3D11::ID3D11Texture2D;
