@@ -62,7 +62,7 @@ impl System {
     /// None.
     pub fn time_since_last_vsync(&self) -> Option<(f32, u64)> {
         unsafe {
-            let mut result: (f32, u64) = mem::uninitialized();
+            let mut result: (f32, u64) = (0.0, 0);
             if self.0.GetTimeSinceLastVsync.unwrap()(&mut result.0, &mut result.1) {
                 Some(result)
             } else {
@@ -91,14 +91,14 @@ impl System {
         predicted_seconds_to_photons_from_now: f32,
     ) -> TrackedDevicePoses {
         unsafe {
-            let mut result: TrackedDevicePoses = mem::uninitialized();
+            let mut result: mem::MaybeUninit<TrackedDevicePoses> = mem::MaybeUninit::uninit();
             self.0.GetDeviceToAbsoluteTrackingPose.unwrap()(
                 origin as sys::ETrackingUniverseOrigin,
                 predicted_seconds_to_photons_from_now,
-                result.as_mut().as_mut_ptr() as *mut _,
-                result.len() as u32,
+                result.as_mut_ptr() as *mut _,
+                MAX_TRACKED_DEVICE_COUNT as u32,
             );
-            result
+            result.assume_init()
         }
     }
 
@@ -215,14 +215,15 @@ impl System {
         device: TrackedDeviceIndex,
         property: TrackedDeviceProperty,
     ) -> Result<bool, TrackedPropertyError> {
-        unsafe {
-            let mut error: TrackedPropertyError = mem::uninitialized();
-            let r = self.0.GetBoolTrackedDeviceProperty.unwrap()(device, property, &mut error.0);
-            if error == tracked_property_error::SUCCESS {
-                Ok(r)
-            } else {
-                Err(error)
-            }
+        let mut error: mem::MaybeUninit<TrackedPropertyError> = mem::MaybeUninit::uninit();
+        let r = unsafe { self.0.GetBoolTrackedDeviceProperty.unwrap()(device, property, error.as_mut_ptr() as *mut sys::TrackedPropertyError) };
+        
+        let error = unsafe { error.assume_init() };
+
+        if error == tracked_property_error::SUCCESS {
+            Ok(r)
+        } else {
+            Err(error)
         }
     }
 
@@ -231,14 +232,15 @@ impl System {
         device: TrackedDeviceIndex,
         property: TrackedDeviceProperty,
     ) -> Result<f32, TrackedPropertyError> {
-        unsafe {
-            let mut error: TrackedPropertyError = mem::uninitialized();
-            let r = self.0.GetFloatTrackedDeviceProperty.unwrap()(device, property, &mut error.0);
-            if error == tracked_property_error::SUCCESS {
-                Ok(r)
-            } else {
-                Err(error)
-            }
+        let mut error: mem::MaybeUninit<TrackedPropertyError> = mem::MaybeUninit::uninit();
+        let r = unsafe { self.0.GetFloatTrackedDeviceProperty.unwrap()(device, property, error.as_mut_ptr() as *mut sys::TrackedPropertyError) };
+
+        let error = unsafe { error.assume_init() };
+
+        if error == tracked_property_error::SUCCESS {
+            Ok(r)
+        } else {
+            Err(error)
         }
     }
 
@@ -247,14 +249,16 @@ impl System {
         device: TrackedDeviceIndex,
         property: TrackedDeviceProperty,
     ) -> Result<i32, TrackedPropertyError> {
-        unsafe {
-            let mut error: TrackedPropertyError = mem::uninitialized();
-            let r = self.0.GetInt32TrackedDeviceProperty.unwrap()(device, property, &mut error.0);
-            if error == tracked_property_error::SUCCESS {
-                Ok(r)
-            } else {
-                Err(error)
-            }
+        let mut error: mem::MaybeUninit<TrackedPropertyError> = mem::MaybeUninit::uninit();
+
+        let r = unsafe { self.0.GetInt32TrackedDeviceProperty.unwrap()(device, property, error.as_mut_ptr() as *mut sys::TrackedPropertyError) };
+
+        let error = unsafe { error.assume_init() };
+
+        if error == tracked_property_error::SUCCESS {
+            Ok(r)
+        } else {
+            Err(error)
         }
     }
 
@@ -263,14 +267,16 @@ impl System {
         device: TrackedDeviceIndex,
         property: TrackedDeviceProperty,
     ) -> Result<u64, TrackedPropertyError> {
-        unsafe {
-            let mut error: TrackedPropertyError = mem::uninitialized();
-            let r = self.0.GetUint64TrackedDeviceProperty.unwrap()(device, property, &mut error.0);
-            if error == tracked_property_error::SUCCESS {
-                Ok(r)
-            } else {
-                Err(error)
-            }
+        let mut error: mem::MaybeUninit<TrackedPropertyError> = mem::MaybeUninit::uninit();
+
+        let r = unsafe {self.0.GetUint64TrackedDeviceProperty.unwrap()(device, property, error.as_mut_ptr() as *mut sys::TrackedPropertyError)};
+        
+        let error = unsafe { error.assume_init() };
+        
+        if error == tracked_property_error::SUCCESS {
+            Ok(r)
+        } else {
+            Err(error)
         }
     }
 
@@ -279,15 +285,22 @@ impl System {
         device: TrackedDeviceIndex,
         property: TrackedDeviceProperty,
     ) -> Result<[[f32; 4]; 3], TrackedPropertyError> {
-        unsafe {
-            let mut error: TrackedPropertyError = mem::uninitialized();
-            let r =
-                self.0.GetMatrix34TrackedDeviceProperty.unwrap()(device, property, &mut error.0);
-            if error == tracked_property_error::SUCCESS {
-                Ok(r.m)
-            } else {
-                Err(error)
-            }
+        let mut error: mem::MaybeUninit<TrackedPropertyError> = mem::MaybeUninit::uninit();
+    
+        let r = unsafe {
+            self.0.GetMatrix34TrackedDeviceProperty.unwrap()(
+                device,
+                property,
+                error.as_mut_ptr() as *mut sys::TrackedPropertyError,
+            )
+        };
+    
+        let error = unsafe { error.assume_init() };
+    
+        if error == tracked_property_error::SUCCESS {
+            Ok(r.m)
+        } else {
+            Err(error)
         }
     }
 
@@ -297,11 +310,11 @@ impl System {
         property: TrackedDeviceProperty,
     ) -> Result<CString, TrackedPropertyError> {
         unsafe {
-            let mut error = mem::uninitialized();
+            let mut error = mem::MaybeUninit::uninit();
             let res = get_string(|ptr, n| {
-                self.0.GetStringTrackedDeviceProperty.unwrap()(device, property, ptr, n, &mut error)
+                self.0.GetStringTrackedDeviceProperty.unwrap()(device, property, ptr, n, error.as_mut_ptr())
             });
-            res.map_or(Err(TrackedPropertyError(error)), Ok)
+            res.map_or(Err(TrackedPropertyError(error.assume_init())), Ok)
         }
     }
 
@@ -341,13 +354,13 @@ impl System {
     /// API.
     pub fn controller_state(&self, device: TrackedDeviceIndex) -> Option<ControllerState> {
         unsafe {
-            let mut state = mem::uninitialized();
+            let mut state = mem::MaybeUninit::uninit();
             if self.0.GetControllerState.unwrap()(
                 device,
                 &mut state as *mut _ as *mut _,
                 mem::size_of_val(&state) as u32,
             ) {
-                Some(state)
+                Some(state.assume_init())
             } else {
                 None
             }
@@ -360,17 +373,18 @@ impl System {
         origin: TrackingUniverseOrigin,
         device: TrackedDeviceIndex,
     ) -> Option<(ControllerState, TrackedDevicePose)> {
+        let mut state: mem::MaybeUninit<ControllerState> = mem::MaybeUninit::uninit();
+        let mut pose = mem::MaybeUninit::uninit();
+    
         unsafe {
-            let mut state = mem::uninitialized();
-            let mut pose = mem::uninitialized();
             if self.0.GetControllerStateWithPose.unwrap()(
                 origin as sys::ETrackingUniverseOrigin,
                 device,
-                &mut state as *mut _ as *mut _,
-                mem::size_of_val(&state) as u32,
-                &mut pose,
+                state.as_mut_ptr() as *mut _,
+                mem::size_of::<ControllerState>() as u32,
+                pose.as_mut_ptr(),
             ) {
-                Some((state, pose.into()))
+                Some((state.assume_init(), pose.assume_init().into()))
             } else {
                 None
             }
