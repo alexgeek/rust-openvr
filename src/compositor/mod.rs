@@ -240,16 +240,20 @@ pub mod compositor_error {
         CompositorError(sys::EVRCompositorError_VRCompositorError_InvalidBounds);
 }
 
+
 impl fmt::Debug for CompositorError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.pad(error::Error::description(self))
+        write!(f, "{}", self) 
     }
 }
 
 impl error::Error for CompositorError {
-    fn description(&self) -> &str {
+}
+
+impl fmt::Display for CompositorError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::compositor_error::*;
-        match *self {
+        let description = match *self {
             REQUEST_FAILED => "REQUEST_FAILED",
             INCOMPATIBLE_VERSION => "INCOMPATIBLE_VERSION",
             DO_NOT_HAVE_FOCUS => "DO_NOT_HAVE_FOCUS",
@@ -262,12 +266,7 @@ impl error::Error for CompositorError {
             ALREADY_SUBMITTED => "ALREADY_SUBMITTED",
             INVALID_BOUNDS => "INVALID_BOUNDS",
             _ => "UNKNOWN",
-        }
-    }
-}
-
-impl fmt::Display for CompositorError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.pad(error::Error::description(self))
+        };
+        f.pad(description)
     }
 }

@@ -161,14 +161,17 @@ pub mod error {
 
 impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.pad(::std::error::Error::description(self))
+        write!(f, "{}", self) 
     }
 }
 
 impl ::std::error::Error for Error {
-    fn description(&self) -> &str {
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::error::*;
-        match *self {
+        let description = match *self {
             NONE => "NONE",
             LOADING => "LOADING",
             NOT_SUPPORTED => "NOT_SUPPORTED",
@@ -183,13 +186,8 @@ impl ::std::error::Error for Error {
             NOT_ENOUGH_TEX_COORDS => "NOT_ENOUGH_TEX_COORDS",
             INVALID_TEXTURE => "INVALID_TEXTURE",
             _ => "UNKNOWN",
-        }
-    }
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.pad(::std::error::Error::description(self))
+        };
+        f.pad(description)
     }
 }
 

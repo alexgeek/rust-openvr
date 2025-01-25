@@ -3,7 +3,6 @@
 
 use std::ffi::CString;
 use std::marker::PhantomData;
-use std::sync::Arc;
 use std::{mem, ptr, slice};
 
 use openvr_sys as sys;
@@ -483,14 +482,17 @@ pub mod tracked_property_error {
 
 impl fmt::Debug for TrackedPropertyError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.pad(::std::error::Error::description(self))
+        write!(f, "{}", self)
     }
 }
 
 impl ::std::error::Error for TrackedPropertyError {
-    fn description(&self) -> &str {
+}
+
+impl fmt::Display for TrackedPropertyError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::tracked_property_error::*;
-        match *self {
+        let description = match *self {
             SUCCESS => "SUCCESS",
             WRONG_DATA_TYPE => "WRONG_DATA_TYPE",
             WRONG_DEVICE_CLASS => "WRONG_DEVICE_CLASS",
@@ -504,13 +506,8 @@ impl ::std::error::Error for TrackedPropertyError {
             PERMISSION_DENIED => "PERMISSION_DENIED",
             INVALID_OPERATION => "INVALID_OPERATION",
             _ => "UNKNOWN",
-        }
-    }
-}
-
-impl fmt::Display for TrackedPropertyError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.pad(::std::error::Error::description(self))
+        };
+        f.pad(&description)
     }
 }
 

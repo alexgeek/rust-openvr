@@ -160,16 +160,16 @@ impl fmt::Debug for InitError {
 }
 
 impl error::Error for InitError {
-    fn description(&self) -> &str {
-        let msg = unsafe { CStr::from_ptr(sys::VR_GetVRInitErrorAsEnglishDescription(self.0)) };
-        msg.to_str()
-            .expect("OpenVR init error description was not valid UTF-8")
-    }
+
 }
 
 impl fmt::Display for InitError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.pad(error::Error::description(self))
+        let msg = unsafe { CStr::from_ptr(sys::VR_GetVRInitErrorAsEnglishDescription(self.0)) };
+        let description = msg
+            .to_str()
+            .expect("OpenVR init error description was not valid UTF-8");
+        f.pad(description)
     }
 }
 
