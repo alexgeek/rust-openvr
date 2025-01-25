@@ -3,6 +3,7 @@
 
 use std::ffi::CString;
 use std::marker::PhantomData;
+use std::sync::Arc;
 use std::{mem, ptr, slice};
 
 use openvr_sys as sys;
@@ -18,10 +19,21 @@ impl System {
     /// stretching. This size is matched with the projection matrix and distortion function and will change from display
     /// to display depending on resolution, distortion, and field of view.
     pub fn recommended_render_target_size(&self) -> (u32, u32) {
+        let mut result: (mem::MaybeUninit<u32>, mem::MaybeUninit<u32>) = (
+            mem::MaybeUninit::uninit(),
+            mem::MaybeUninit::uninit(),
+        );
+    
         unsafe {
-            let mut result: (u32, u32) = mem::uninitialized();
-            self.0.GetRecommendedRenderTargetSize.unwrap()(&mut result.0, &mut result.1);
-            result
+            self.0.GetRecommendedRenderTargetSize.unwrap()(
+                result.0.as_mut_ptr(),
+                result.1.as_mut_ptr(),
+            );
+    
+            (
+                result.0.assume_init(),
+                result.1.assume_init(),
+            )
         }
     }
 
@@ -36,16 +48,18 @@ impl System {
     /// of this method, but sometimes a game needs to do something fancy with its projection and can use these values to
     /// compute its own matrix.
     pub fn projection_raw(&self, eye: Eye) -> RawProjection {
+        let mut result = mem::MaybeUninit::<RawProjection>::uninit();
+    
         unsafe {
-            let mut result: RawProjection = mem::uninitialized();
             self.0.GetProjectionRaw.unwrap()(
                 eye as sys::EVREye,
-                &mut result.left,
-                &mut result.right,
-                &mut result.top,
-                &mut result.bottom,
+                &mut (*result.as_mut_ptr()).left,
+                &mut (*result.as_mut_ptr()).right,
+                &mut (*result.as_mut_ptr()).top,
+                &mut (*result.as_mut_ptr()).bottom,
             );
-            result
+            
+            result.assume_init()
         }
     }
 
@@ -142,13 +156,15 @@ impl System {
     /// Computes the distortion caused by the optics
     /// Gets the result of a single distortion value for use in a distortion map. Input UVs are in a single eye's viewport, and output UVs are for the source render target in the distortion shader.
     pub fn compute_distortion(&self, eye: Eye, u: f32, v: f32) -> Option<DistortionCoordinates> {
-        let mut coord = unsafe { mem::uninitialized() };
+        let mut coord = mem::MaybeUninit::uninit();
         let success =
-            unsafe { self.0.ComputeDistortion.unwrap()(eye as sys::EVREye, u, v, &mut coord) };
+            unsafe { self.0.ComputeDistortion.unwrap()(eye as sys::EVREye, u, v, coord.as_mut_ptr()) };
 
         if !success {
             return None;
         }
+
+        let coord = unsafe { coord.assume_init() };
 
         Some(DistortionCoordinates {
             red: coord.rfRed,
@@ -196,12 +212,14 @@ impl System {
         instance: *mut VkInstance_T,
     ) -> Option<*mut VkPhysicalDevice_T> {
         unsafe {
-            let mut device = mem::uninitialized();
+            let mut device = mem::MaybeUninit::uninit();
             self.0.GetOutputDevice.unwrap()(
-                &mut device,
+                device.as_mut_ptr(),
                 sys::ETextureType_TextureType_Vulkan,
                 instance,
             );
+
+            let device = device.assume_init();
             if device == 0 {
                 None
             } else {
@@ -272,7 +290,7 @@ impl System {
         let r = unsafe {self.0.GetUint64TrackedDeviceProperty.unwrap()(device, property, error.as_mut_ptr() as *mut sys::TrackedPropertyError)};
         
         let error = unsafe { error.assume_init() };
-        
+
         if error == tracked_property_error::SUCCESS {
             Ok(r)
         } else {
